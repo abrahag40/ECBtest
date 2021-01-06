@@ -12,7 +12,7 @@ function App() {
   const [cars, setCars] = useState([]);
   const [mantenimiento, Setmantenimiento] = useState(false);
   const [show, setShow] = useState(false);
-  const [fechaEntrega_, setFechaEntrega] = useState("")
+  const [fechaEntrega_, setFechaEntrega] = useState("");
   const handleClose = () => {
     setShow(false);
     localStorage.removeItem("carData");
@@ -57,13 +57,13 @@ function App() {
   const handlerUpdate = (fechaEntrega, responsable) => {
     let carData = JSON.parse(localStorage.getItem("carData"));
     maintenance_ = carData.maintenance ? false : true;
-    console.log('fechaEntrega--',fechaEntrega);
+    console.log("fechaEntrega--", fechaEntrega);
     axios
       .post(`${uri}upload`, {
         id: carData._id,
         estimatedate: fechaEntrega.toString(),
         maintenance: maintenance_,
-        responsable: responsable.toString()
+        responsable: responsable.toString(),
       })
       .then(function (response) {
         console.log(response);
@@ -71,15 +71,42 @@ function App() {
       .catch(function (error) {
         console.log(error);
       });
-      handleClose()
-      setTimeout(() => {
-        window.location.reload();
-      }, 600);
+    handleClose();
+    setTimeout(() => {
+      window.location.reload();
+    }, 600);
   };
 
   const dataCar = (carData) => {
     localStorage.setItem("carData", JSON.stringify(carData));
-    handleShow();
+    maintenance_ = carData.maintenance ? false : true;
+    console.log(carData.maintenance);
+    if (!carData.maintenance) {
+      handleShow();
+    } else {
+      axios
+      .post(`${uri}upload`, {
+        id: carData._id,
+        description: carData.description,
+        make: carData.make,
+        model: carData.model,
+        estimatedate: "entregado",
+        image: carData.image,
+        km: carData.km,
+        maintenance: maintenance_,
+        responsable: "",
+        id_: carData.id
+      })
+      .then(function (response) {
+        console.log(response);
+        setTimeout(() => {
+          window.location.reload();
+        }, 600);
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
+    }
   };
 
   const SignupSchema = Yup.object().shape({
@@ -87,7 +114,6 @@ function App() {
     fechaEntrega: Yup.string().required("Required"),
   });
 
-  console.log("--", maintenance_);
   return (
     <>
       <div className="container">
@@ -122,6 +148,7 @@ function App() {
                       : "-";
                     let image = res.image ? res.image : "-";
                     let km = res.km ? res.km : "-";
+                    let maintenance = res.maintenance ? res.maintenance : "";
                     return (
                       <>
                         <tr>
@@ -140,11 +167,21 @@ function App() {
                             style={{ justifyContent: "center" }}
                           >
                             <div>
-                              <input
-                                type="checkbox"
-                                onClick={dataCar.bind(this, res)}
-                                className="form-check-input"
-                              />
+                              {maintenance ? (
+                                <input
+                                  type="checkbox"
+                                  onClick={dataCar.bind(this, res)}
+                                  className="form-check-input"
+                                  defaultChecked
+                                />
+                              ) : (
+                                <input
+                                  type="checkbox"
+                                  onClick={dataCar.bind(this, res)}
+                                  className="form-check-input"
+                                />
+                              )}
+
                               <span style={{ paddingLeft: "10px" }}>
                                 {res.maintenance ? <FiTool /> : ""}
                               </span>
@@ -169,8 +206,8 @@ function App() {
             }}
             validationSchema={SignupSchema}
             // onSubmit={(handleClose, handlerUpdate, setFechaEntrega(fechaEntrega))}
-            onSubmit={values => {
-              handlerUpdate(values.fechaEntrega, values.name)
+            onSubmit={(values) => {
+              handlerUpdate(values.fechaEntrega, values.name);
             }}
           >
             {({ errors, touched }) => (
@@ -185,7 +222,11 @@ function App() {
 
                 <div className="form-group">
                   <label htmlFor="fechaEntrega">Fecha Entrega</label>
-                  <Field name="fechaEntrega" className="form-control" placeholder="dd/mm/yyyy" />
+                  <Field
+                    name="fechaEntrega"
+                    className="form-control"
+                    placeholder="dd/mm/yyyy"
+                  />
                   {errors.fechaEntrega && touched.fechaEntrega ? (
                     <div>{errors.fechaEntrega}</div>
                   ) : null}
@@ -193,7 +234,7 @@ function App() {
                 <div className="row">
                   <div className="col-12">
                     <div className="d-flex justify-content-center">
-                    <Button type="submit">Enviar</Button>
+                      <Button type="submit">Enviar</Button>
                     </div>
                   </div>
                 </div>
